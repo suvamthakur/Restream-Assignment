@@ -1,24 +1,43 @@
-import logo from './logo.svg';
-import './App.css';
+import { Outlet, useNavigate } from "react-router-dom";
+import "./App.css";
+import { userContext } from "./utils/userContext";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
 
 function App() {
+  const navigate = useNavigate();
+
+  const [{ uid, email, photoURL }, setUserData] = useState({
+    uid: "",
+    email: "",
+    photoURL: "",
+  });
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserData({
+          uid: user.uid,
+          email: user.email,
+          photoURL: user.photoURL,
+        });
+
+        // If user is logged in
+        navigate("/dashboard");
+      } else {
+        // Sign out
+        navigate("/");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <userContext.Provider value={{ uid, email, photoURL, setUserData }}>
+      <Outlet />
+    </userContext.Provider>
   );
 }
 
